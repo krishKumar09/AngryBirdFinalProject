@@ -57,33 +57,28 @@ public class PauseMenuScreen implements Screen {
     }
 
     private void updateButtonPositions() {
-        float buttonWidth = WORLD_WIDTH * 0.15f; // 15% of screen width
-        float buttonHeight = buttonWidth; // Square buttons
-        float centerX = (WORLD_WIDTH - buttonWidth) / 2;
-        float spacing = WORLD_HEIGHT * 0.15f; // 15% of screen height
 
-        // Position buttons vertically centered with spacing
-        float startY = WORLD_HEIGHT * 0.7f; // Start at 70% of screen height
+
 
         resumeButtonBounds = new Rectangle(125, 300, 100, 100);
         newGameButtonBounds = new Rectangle(130, 170  , 105, 100);
         homeButtonBounds = new Rectangle(110, 60, 123, 97);
 
-        // Scale font based on world height
+
         float fontScale = WORLD_HEIGHT * 0.003f;
         font.getData().setScale(fontScale);
     }
 
     @Override
     public void render(float delta) {
-        // Render previous screen
+
         if (previousScreen != null) {
             previousScreen.render(delta);
         }
 
         viewport.apply();
 
-        // Draw overlay
+
         Gdx.gl.glEnable(GL20.GL_BLEND);
         shapeRenderer.setProjectionMatrix(viewport.getCamera().combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
@@ -92,11 +87,11 @@ public class PauseMenuScreen implements Screen {
         shapeRenderer.end();
         Gdx.gl.glDisable(GL20.GL_BLEND);
 
-        // Draw buttons and text
+
         batch.setProjectionMatrix(viewport.getCamera().combined);
         batch.begin();
 
-        // Draw buttons
+
         batch.draw(resumeButtonTexture, resumeButtonBounds.x, resumeButtonBounds.y,
             resumeButtonBounds.width, resumeButtonBounds.height);
         batch.draw(newGameButtonTexture, newGameButtonBounds.x, newGameButtonBounds.y,
@@ -104,8 +99,8 @@ public class PauseMenuScreen implements Screen {
         batch.draw(homeButtonTexture, homeButtonBounds.x, homeButtonBounds.y,
             homeButtonBounds.width, homeButtonBounds.height);
 
-        // Draw labels - position relative to buttons
-        float labelOffset = WORLD_WIDTH * 0.12f;
+
+
         font.draw(batch, "Resume", 360  ,
             363);
         font.draw(batch, "New Game", 360,
@@ -136,7 +131,7 @@ public class PauseMenuScreen implements Screen {
     @Override
     public void resize(int width, int height) {
         viewport.update(width, height, true);
-        updateButtonPositions(); // Recalculate positions when resized
+        updateButtonPositions(); // Recalculate button positions when resized
     }
 
     @Override

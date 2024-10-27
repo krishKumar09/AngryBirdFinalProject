@@ -1,0 +1,21 @@
+The project name is Angry Bird
+To run our game first you have to download all the files and set up in the desktop then setup the gradle then
+you can run our game.
+
+So in the assets we have all the images regarding all the screens and buttons and all. All are downloaded from
+online resouces some from google, some from twitter some from facebook mostly google.
+
+For now we have 4 screens namely, Level1Screen, MainMenu, MainScreen , PauseMenuScreen
+
+when we run the code the Main class or Main screen runs and automaitcally switch us to the MainMenu Screen which
+is our start screen then we click on the start the we switch to the MainScreen there for now we have 3 levels and
+for now all the 3 levels points to the same level late we will made it correct.
+
+And in that level we have the pause screen button by clicking on that we can switch to pause menu screen and by
+clicking on the resume button we can go back to the level1 screen
+
+For now this is it
+Hope it was good..
+
+Krish Kumar (2023287)
+Pranshu Tiwari (2023387)

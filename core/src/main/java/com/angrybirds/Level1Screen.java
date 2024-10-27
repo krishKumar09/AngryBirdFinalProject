@@ -26,15 +26,8 @@ public class Level1Screen implements Screen {
     private Texture slingshotTexture;
     private Stage stage;
     private Viewport viewport;
-    private boolean isPaused;  // Add this flag to track pause state
+    private boolean isPaused;
 
-    // Game element positions
-    private float birdX = 100f, birdY = 50f;
-    private float pig1X = 400f, pig1Y = 50f;
-    private float pig2X = 450f, pig2Y = 50f;
-    private float box1X = 350f, box1Y = 50f;
-    private float box2X = 500f, box2Y = 50f;
-    private float slingshotX = 90f, slingshotY = 50f;
 
     public Level1Screen(Main game) {
         this.game = game;
@@ -45,14 +38,14 @@ public class Level1Screen implements Screen {
     private void initializeScreen() {
         batch = new SpriteBatch();
 
-        // Load textures
+
         levelBackground = new Texture(Gdx.files.internal("level.png"));
         angryBirdTexture = new Texture(Gdx.files.internal("angry_bird.png"));
         pigTexture = new Texture(Gdx.files.internal("pig.png"));
         boxTexture = new Texture(Gdx.files.internal("boxx.png"));
         slingshotTexture = new Texture(Gdx.files.internal("slingshot.png"));
 
-        // Set up viewport and stage
+
         viewport = new StretchViewport(640, 480);
         stage = new Stage(viewport);
 
@@ -60,12 +53,12 @@ public class Level1Screen implements Screen {
     }
 
     private void setupPauseButton() {
-        // Create pause button
+
         Texture pauseTexture = new Texture(Gdx.files.internal("pause.png"));
         Drawable pauseDrawable = new TextureRegionDrawable(pauseTexture);
         ImageButton pauseButton = new ImageButton(pauseDrawable);
 
-        // Add click listener
+
         pauseButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
@@ -73,12 +66,12 @@ public class Level1Screen implements Screen {
             }
         });
 
-        // Set up table for layout
+
         Table table = new Table();
         table.setFillParent(true);
         stage.addActor(table);
 
-        // Position pause button
+
         table.add(pauseButton).padBottom(10).expand().top().width(40).height(40).left();
     }
 
@@ -94,25 +87,25 @@ public class Level1Screen implements Screen {
 
     @Override
     public void render(float delta) {
-        // Clear screen
+
         ScreenUtils.clear(0.2f, 0.3f, 0.4f, 1f);
 
-        // Update only if not paused
+
         if (!isPaused) {
             update(delta);
         }
 
-        // Apply viewport and set up batch
+
         viewport.apply();
         batch.setProjectionMatrix(stage.getCamera().combined);
 
-        // Render game elements
+
         batch.begin();
 
-        // Draw background
+
         batch.draw(levelBackground, 0, 0, viewport.getWorldWidth(), viewport.getWorldHeight());
 
-        // Draw game elements
+
         batch.draw(slingshotTexture, 70, 102, 100, 110);
         batch.draw(angryBirdTexture, 40, 102, 55, 55);
         batch.draw(pigTexture, 577, 162, 30, 30);
@@ -122,14 +115,13 @@ public class Level1Screen implements Screen {
 
         batch.end();
 
-        // Update and draw stage
+
         stage.act(delta);
         stage.draw();
     }
 
     private void update(float delta) {
-        // Add game logic updates here
-        // This will only run when the game is not paused
+
     }
 
     public void setPaused(boolean paused) {

@@ -23,8 +23,8 @@ public class MainScreen implements Screen {
     private Viewport viewport;
     private Texture backButtonTexture;
     private Texture level1Texture;
-    private Texture level2Texture; // Texture for Level 2 button
-    private Texture level3Texture; // Texture for Level 3 button
+    private Texture level2Texture;
+    private Texture level3Texture;
 
     public MainScreen(Main game) {
         this.game = game;
@@ -144,7 +144,7 @@ public class MainScreen implements Screen {
         if (background != null) background.dispose();
         if (backButtonTexture != null) backButtonTexture.dispose();
         if (level1Texture != null) level1Texture.dispose();
-        if (level2Texture != null) level2Texture.dispose(); // Dispose level2 texture
-        if (level3Texture != null) level3Texture.dispose(); // Dispose level3 texture
+        if (level2Texture != null) level2Texture.dispose();
+        if (level3Texture != null) level3Texture.dispose();
     }
 }
