@@ -117,7 +117,7 @@ public class PauseMenuScreen implements Screen {
 
             if (resumeButtonBounds.contains(touchPoint.x, touchPoint.y)) {
                 if (previousScreen instanceof Level1Screen) {
-                    ((Level1Screen) previousScreen).setPaused(false);
+//                    ((Level1Screen) previousScreen).setPaused(false);
                 }
                 game.setScreen(previousScreen);
             } else if (newGameButtonBounds.contains(touchPoint.x, touchPoint.y)) {

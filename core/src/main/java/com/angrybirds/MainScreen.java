@@ -6,7 +6,6 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
-import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
@@ -39,19 +38,11 @@ public class MainScreen implements Screen {
             Gdx.app.error("MainScreen", "Background image not found or failed to load: " + e.getMessage());
         }
 
-        Skin skin;
-        try {
-            skin = new Skin(Gdx.files.internal("uiskin.json"));
-        } catch (Exception e) {
-            Gdx.app.error("MainScreen", "UI skin file not found or failed to load: " + e.getMessage());
-            return;
-        }
-
         try {
             backButtonTexture = new Texture(Gdx.files.internal("back.png"));
             level1Texture = new Texture(Gdx.files.internal("level1.png"));
-            level2Texture = new Texture(Gdx.files.internal("level2.png")); // Load level 2 texture
-            level3Texture = new Texture(Gdx.files.internal("level3.png")); // Load level 3 texture
+            level2Texture = new Texture(Gdx.files.internal("level2.png"));
+            level3Texture = new Texture(Gdx.files.internal("level3.png"));
         } catch (Exception e) {
             Gdx.app.error("MainScreen", "Button image not found or failed to load: " + e.getMessage());
             return;
@@ -61,6 +52,7 @@ public class MainScreen implements Screen {
         backButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
+                Gdx.app.log("MainScreen", "Back button clicked");
                 game.setScreen(new MainMenu(game));
             }
         });
@@ -69,6 +61,7 @@ public class MainScreen implements Screen {
         level1Button.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
+                Gdx.app.log("MainScreen", "Level 1 button clicked");
                 game.setScreen(new Level1Screen(game));
             }
         });
@@ -77,7 +70,8 @@ public class MainScreen implements Screen {
         level2Button.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.setScreen(new Level1Screen(game));
+                Gdx.app.log("MainScreen", "Level 2 button clicked");
+                game.setScreen(new Level2Screen());
             }
         });
 
@@ -85,7 +79,8 @@ public class MainScreen implements Screen {
         level3Button.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.setScreen(new Level1Screen(game));
+                Gdx.app.log("MainScreen", "Level 3 button clicked");
+                game.setScreen(new Level3Screen());
             }
         });
 
@@ -99,7 +94,6 @@ public class MainScreen implements Screen {
         table.add(level1Button).expand().left().width(200).height(110).padBottom(10);
         table.add(level2Button).expand().center().width(200).height(110).padBottom(10);
         table.add(level3Button).expand().right().width(200).height(110).padBottom(10);
-
     }
 
     @Override

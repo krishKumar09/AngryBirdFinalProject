@@ -1,161 +1,266 @@
 package com.angrybirds;
 
-import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.scenes.scene2d.Stage;
-import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
-import com.badlogic.gdx.scenes.scene2d.ui.Table;
-import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
-import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
-import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
+import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.physics.box2d.*;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
-import com.badlogic.gdx.utils.ScreenUtils;
+import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
+import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
+import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.StretchViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import com.badlogic.gdx.scenes.scene2d.Stage;
 
 public class Level1Screen implements Screen {
-    private final Main game;
-    private SpriteBatch batch;
-    private Texture levelBackground;
-    private Texture angryBirdTexture;
-    private Texture pigTexture;
-    private Texture boxTexture;
-    private Texture slingshotTexture;
-    private Stage stage;
+    private World world;
+    private OrthographicCamera camera;
     private Viewport viewport;
-    private boolean isPaused;
+    private SpriteBatch batch;
+    private Texture backButtonTexture;
+    private AngryBird angryBird;
+    private Array<Pig> pigs;
+    private Array<Box> boxes; // Boxes in the game
+    private Slingshot slingshot;
 
+    private boolean dragging;
+    private boolean snappedToSlingshot;
+    private Vector2 slingshotAnchor;
+    private Texture background;
+
+    private Stage stage; // Stage for UI elements
+    private ImageButton pausemenuButton; // Pause button for the menu
 
     public Level1Screen(Main game) {
-        this.game = game;
-        this.isPaused = false;
-        initializeScreen();
-    }
+        // Box2D world initialization
+        world = new World(new Vector2(0, -9.8f), true);
+        setupContactListener();
 
-    private void initializeScreen() {
+        // Camera setup
+        camera = new OrthographicCamera();
+        viewport = new StretchViewport(16, 9, camera); // Maintain 16:9 aspect ratio
+        viewport.apply();
+        camera.position.set(camera.viewportWidth / 2, camera.viewportHeight / 2, 0);
+
+        // Sprite batch for rendering
         batch = new SpriteBatch();
 
+        // Load background texture
+        background = new Texture("level.png");
 
-        levelBackground = new Texture(Gdx.files.internal("level.png"));
-        angryBirdTexture = new Texture(Gdx.files.internal("angry_bird.png"));
-        pigTexture = new Texture(Gdx.files.internal("pig.png"));
-        boxTexture = new Texture(Gdx.files.internal("boxx.png"));
-        slingshotTexture = new Texture(Gdx.files.internal("slingshot.png"));
+        // Initialize game objects
+        slingshot = new Slingshot(world, 2, 1.9f, 2.3f, 2.5f); // Adjust slingshot position as needed
+        angryBird = new AngryBird(world, 2f, 2.4f); // Bird starts here
 
+        // Initialize boxes
+        boxes = new Array<>();
+        boxes.add(new Box(world, 9, 2.5f)); // First box
+        boxes.add(new Box(world, 11, 2.5f)); // Second box
 
-        viewport = new StretchViewport(640, 480);
-        stage = new Stage(viewport);
+        // Define box and pig dimensions
+        float boxHeight = 0.5f; // Adjust based on box size (height)
+        float pigRadius = 0.3f; // Approximate radius of the pig (or use half-height if rectangular)
 
-        setupPauseButton();
-    }
+        // Initialize pigs and place them on top of the boxes
+        pigs = new Array<>();
+        pigs.add(new Pig(world, 9, 2.5f + boxHeight / 2 + pigRadius)); // Pig on first box
+        pigs.add(new Pig(world, 11, 2.5f + boxHeight / 2 + pigRadius)); // Pig on second box
 
-    private void setupPauseButton() {
+        slingshotAnchor = new Vector2(2.9f, 3.9f); // Anchor for the slingshot
+        dragging = false;
+        snappedToSlingshot = false; // Bird hasn't snapped to the slingshot yet
 
-        Texture pauseTexture = new Texture(Gdx.files.internal("pause.png"));
-        Drawable pauseDrawable = new TextureRegionDrawable(pauseTexture);
-        ImageButton pauseButton = new ImageButton(pauseDrawable);
+        // Initialize UI stage
+        stage = new Stage(viewport, batch);
 
+        // Create pause button
+        backButtonTexture = new Texture(Gdx.files.internal("pause.png"));
+        pausemenuButton = new ImageButton(new TextureRegionDrawable(backButtonTexture));
+        pausemenuButton.setPosition(0, camera.viewportHeight - backButtonTexture.getHeight()); // Position at top left
 
-        pauseButton.addListener(new ClickListener() {
+        // Add button listener to switch to the pause menu
+        pausemenuButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                pauseGame();
+                game.setScreen(new PauseMenuScreen(game, new Level1Screen(game)));
             }
         });
 
+        // Add the pause button to the stage
+        stage.addActor(pausemenuButton);
 
-        Table table = new Table();
-        table.setFillParent(true);
-        stage.addActor(table);
-
-
-        table.add(pauseButton).padBottom(10).expand().top().width(40).height(40).left();
+        // Create ground and boundaries
+        createBoundaries();
     }
 
-    private void pauseGame() {
-        isPaused = true;
-        game.setScreen(new PauseMenuScreen(game, this));
+    private void setupContactListener() {
+        world.setContactListener(new ContactListener() {
+            @Override
+            public void beginContact(Contact contact) {
+                Object userDataA = contact.getFixtureA().getBody().getUserData();
+                Object userDataB = contact.getFixtureB().getBody().getUserData();
+
+                if ((userDataA instanceof AngryBird && userDataB instanceof Pig) ||
+                    (userDataB instanceof AngryBird && userDataA instanceof Pig)) {
+
+                    Pig pig = (userDataA instanceof Pig) ? (Pig) userDataA : (Pig) userDataB;
+                    pig.reduceHealth(50); // Example damage for pig collisions
+                }
+
+                if ((userDataA instanceof AngryBird && userDataB instanceof Box) ||
+                    (userDataB instanceof AngryBird && userDataA instanceof Box)) {
+
+                    Box box = (userDataA instanceof Box) ? (Box) userDataA : (Box) userDataB;
+                    box.reduceHealth(50); // Example damage for box collisions
+                }
+            }
+
+            @Override
+            public void endContact(Contact contact) {}
+
+            @Override
+            public void preSolve(Contact contact, Manifold oldManifold) {}
+
+            @Override
+            public void postSolve(Contact contact, ContactImpulse impulse) {}
+        });
     }
 
-    @Override
-    public void show() {
-        Gdx.input.setInputProcessor(stage);
+    private void createBoundaries() {
+        // Ground
+        BodyDef groundBodyDef = new BodyDef();
+        groundBodyDef.position.set(new Vector2(8, 1.8f));
+        Body groundBody = world.createBody(groundBodyDef);
+
+        PolygonShape groundBox = new PolygonShape();
+        groundBox.setAsBox(8, 0.1f);
+        groundBody.createFixture(groundBox, 0.0f);
+        groundBox.dispose();
+
+        // Left wall
+        BodyDef leftWallDef = new BodyDef();
+        leftWallDef.position.set(new Vector2(0, camera.viewportHeight / 2));
+        Body leftWall = world.createBody(leftWallDef);
+
+        PolygonShape leftWallBox = new PolygonShape();
+        leftWallBox.setAsBox(0.1f, camera.viewportHeight / 2);
+        leftWall.createFixture(leftWallBox, 0.0f);
+        leftWallBox.dispose();
+
+        // Right wall
+        BodyDef rightWallDef = new BodyDef();
+        rightWallDef.position.set(new Vector2(camera.viewportWidth, camera.viewportHeight / 2));
+        Body rightWall = world.createBody(rightWallDef);
+
+        PolygonShape rightWallBox = new PolygonShape();
+        rightWallBox.setAsBox(0.1f, camera.viewportHeight / 2);
+        rightWall.createFixture(rightWallBox, 0.0f);
+        rightWallBox.dispose();
+
+        // Top boundary
+        BodyDef topWallDef = new BodyDef();
+        topWallDef.position.set(new Vector2(camera.viewportWidth / 2, camera.viewportHeight));
+        Body topWall = world.createBody(topWallDef);
+
+        PolygonShape topWallBox = new PolygonShape();
+        topWallBox.setAsBox(camera.viewportWidth / 2, 0.1f);
+        topWall.createFixture(topWallBox, 0.0f);
+        topWallBox.dispose();
     }
 
     @Override
     public void render(float delta) {
+        // Update the Box2D world
+        world.step(1 / 60f, 6, 2);
 
-        ScreenUtils.clear(0.2f, 0.3f, 0.4f, 1f);
+        // Clear the screen
+        Gdx.gl.glClearColor(0, 0, 0, 1);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
+        // Update camera
+        camera.update();
+        batch.setProjectionMatrix(camera.combined);
 
-        if (!isPaused) {
-            update(delta);
-        }
-
-
-        viewport.apply();
-        batch.setProjectionMatrix(stage.getCamera().combined);
-
-
+        // Start rendering
         batch.begin();
 
+        // Draw background, scaled to fit the screen
+        batch.draw(background, 0, 0, camera.viewportWidth, camera.viewportHeight);
 
-        batch.draw(levelBackground, 0, 0, viewport.getWorldWidth(), viewport.getWorldHeight());
-
-
-        batch.draw(slingshotTexture, 70, 102, 100, 110);
-        batch.draw(angryBirdTexture, 40, 102, 55, 55);
-        batch.draw(pigTexture, 577, 162, 30, 30);
-        batch.draw(pigTexture, 515, 162, 30, 30);
-        batch.draw(boxTexture, 562, 102, 60, 60);
-        batch.draw(boxTexture, 500, 102, 60, 60);
+        // Render game objects
+        slingshot.render(batch);
+        angryBird.render(batch);
+        for (Pig pig : pigs) {
+            if (!pig.isEliminated()) {
+                pig.render(batch);
+            }
+        }
+        for (Box box : boxes) {
+            if (!box.isEliminated()) {
+                box.render(batch);
+            }
+        }
 
         batch.end();
 
+        handleInput();
 
-        stage.act(delta);
+        // Draw the UI elements (pause button)
+        stage.act(Math.min(Gdx.graphics.getDeltaTime(), 1 / 30f)); // Limit update time for smooth performance
         stage.draw();
     }
 
-    private void update(float delta) {
+    private void handleInput() {
+        if (Gdx.input.isTouched()) {
+            Vector3 touchPos = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0);
+            camera.unproject(touchPos);
 
-    }
+            if (!angryBird.isLaunched() && !dragging) {
+                Vector2 birdPosition = angryBird.getBody().getPosition();
+                if (new Vector2(touchPos.x, touchPos.y).dst(birdPosition) <= 1f) {
+                    dragging = true;
+                }
+            }
 
-    public void setPaused(boolean paused) {
-        this.isPaused = paused;
+            if (dragging && !snappedToSlingshot) {
+                Vector2 direction = new Vector2(touchPos.x, touchPos.y).sub(slingshotAnchor);
+                angryBird.setPosition(slingshotAnchor.x + direction.x, slingshotAnchor.y + direction.y);
+            }
+        }
     }
 
     @Override
     public void resize(int width, int height) {
-        viewport.update(width, height, true);
+        viewport.update(width, height);
     }
 
     @Override
-    public void pause() {
-        isPaused = true;
-    }
-
-    @Override
-    public void resume() {
-        isPaused = false;
+    public void show() {
+        Gdx.input.setInputProcessor(stage); // Set input processor to the stage
     }
 
     @Override
     public void hide() {
-        isPaused = true;
+        dispose();
     }
 
     @Override
+    public void pause() {}
+
+    @Override
+    public void resume() {}
+
+    @Override
     public void dispose() {
-        stage.dispose();
         batch.dispose();
-        levelBackground.dispose();
-        angryBirdTexture.dispose();
-        pigTexture.dispose();
-        boxTexture.dispose();
-        slingshotTexture.dispose();
+        background.dispose();
+        world.dispose();
+        stage.dispose(); // Dispose the stage
     }
 }
