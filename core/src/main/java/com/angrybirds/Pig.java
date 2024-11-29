@@ -5,7 +5,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.physics.box2d.*;
 public class Pig {
     private Body body;
-    private Texture texture;
+    public Texture texture;
     private boolean eliminated; // Tracks if the pig is eliminated
     private float health; // Health of the pig
 
@@ -70,5 +70,9 @@ public class Pig {
         if (texture != null) {
             texture.dispose();
         }
+    }
+
+    public float getHealth() {
+        return this.health;
     }
 }

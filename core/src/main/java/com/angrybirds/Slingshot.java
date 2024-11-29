@@ -5,8 +5,8 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.physics.box2d.World;
 
 public class Slingshot {
-    private Texture texture;
-    private float x, y; // Position of the slingshot
+    public Texture texture;
+    private float x, y;
     private float width, height; // Size of the slingshot
 
     public Slingshot(World world, float x, float y,float width , float height) {
@@ -20,7 +20,6 @@ public class Slingshot {
 
     public void render(SpriteBatch batch) {
         if (texture != null) {
-            // Render the slingshot
             batch.draw(texture, x, y, width, height);
         }
     }
@@ -33,5 +32,21 @@ public class Slingshot {
 
     public boolean contains(float x, float y) {
         return true;
+    }
+
+    public float getX() {
+        return x;
+    }
+
+    public float getY() {
+        return  y;
+    }
+
+    public float getWidth() {
+        return width;
+    }
+
+    public float getHeight() {
+        return  height;
     }
 }

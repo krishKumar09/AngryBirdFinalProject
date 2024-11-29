@@ -16,14 +16,14 @@ import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.StretchViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
-import com.badlogic.gdx.scenes.scene2d.Stage;
 
 public class Level1Screen implements Screen {
     private World world;
+    public Texture backButtonTexture;
     private OrthographicCamera camera;
     private Viewport viewport;
     private SpriteBatch batch;
-    private Texture backButtonTexture;
+
     private AngryBird angryBird;
     private Array<Pig> pigs;
     private Array<Box> boxes; // Boxes in the game
@@ -33,9 +33,6 @@ public class Level1Screen implements Screen {
     private boolean snappedToSlingshot;
     private Vector2 slingshotAnchor;
     private Texture background;
-
-    private Stage stage; // Stage for UI elements
-    private ImageButton pausemenuButton; // Pause button for the menu
 
     public Level1Screen(Main game) {
         // Box2D world initialization
@@ -75,26 +72,16 @@ public class Level1Screen implements Screen {
         slingshotAnchor = new Vector2(2.9f, 3.9f); // Anchor for the slingshot
         dragging = false;
         snappedToSlingshot = false; // Bird hasn't snapped to the slingshot yet
-
-        // Initialize UI stage
-        stage = new Stage(viewport, batch);
-
-        // Create pause button
         backButtonTexture = new Texture(Gdx.files.internal("pause.png"));
-        pausemenuButton = new ImageButton(new TextureRegionDrawable(backButtonTexture));
-        pausemenuButton.setPosition(0, camera.viewportHeight - backButtonTexture.getHeight()); // Position at top left
-
-        // Add button listener to switch to the pause menu
-        pausemenuButton.addListener(new ClickListener() {
+        ImageButton pausemenu = new ImageButton(new TextureRegionDrawable(backButtonTexture));
+        pausemenu.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.setScreen(new PauseMenuScreen(game, new Level1Screen(game)));
+
+                game.setScreen(new PauseMenuScreen(game,new MainScreen(game)));
             }
+
         });
-
-        // Add the pause button to the stage
-        stage.addActor(pausemenuButton);
-
         // Create ground and boundaries
         createBoundaries();
     }
@@ -210,10 +197,6 @@ public class Level1Screen implements Screen {
         batch.end();
 
         handleInput();
-
-        // Draw the UI elements (pause button)
-        stage.act(Math.min(Gdx.graphics.getDeltaTime(), 1 / 30f)); // Limit update time for smooth performance
-        stage.draw();
     }
 
     private void handleInput() {
@@ -229,26 +212,64 @@ public class Level1Screen implements Screen {
             }
 
             if (dragging && !snappedToSlingshot) {
-                Vector2 direction = new Vector2(touchPos.x, touchPos.y).sub(slingshotAnchor);
-                angryBird.setPosition(slingshotAnchor.x + direction.x, slingshotAnchor.y + direction.y);
+                Vector2 dragPos = new Vector2(touchPos.x, touchPos.y);
+                dragPos.x = Math.min(dragPos.x, 4.0f);
+                dragPos.y = Math.min(dragPos.y, 4.5f);
+
+                if (dragPos.dst(slingshotAnchor) <= 0.5f) {
+                    angryBird.setPosition(slingshotAnchor.x, slingshotAnchor.y);
+                    snappedToSlingshot = true;
+                } else {
+                    angryBird.setPosition(dragPos.x, dragPos.y);
+                }
+            } else if (dragging && snappedToSlingshot) {
+                Vector2 dragPos = new Vector2(touchPos.x, touchPos.y);
+                dragPos.x = Math.min(dragPos.x, 4.0f);
+                dragPos.y = Math.min(dragPos.y, 4.5f);
+
+                Vector2 anchorToDrag = dragPos.sub(slingshotAnchor);
+                if (anchorToDrag.len() > 2f) {
+                    anchorToDrag.setLength(2f);
+                }
+
+                Vector2 limitedPos = slingshotAnchor.cpy().add(anchorToDrag);
+                angryBird.setPosition(limitedPos.x, limitedPos.y);
+            }
+        } else if (!Gdx.input.isTouched() && dragging) {
+            dragging = false;
+
+            if (snappedToSlingshot) {
+                snappedToSlingshot = false;
+
+                Vector2 birdPosition = angryBird.getBody().getPosition();
+                Vector2 launchVector = slingshotAnchor.cpy().sub(birdPosition).scl(0.7f);
+
+                // Adjust the force with a scaling factor
+                float launchForceScale = 5.0f; // Increase this value to make the bird fly farther
+                launchVector.scl(launchForceScale);
+
+                // Log launch vector for debugging
+                System.out.println("Launch Vector: " + launchVector);
+
+                angryBird.launch(launchVector.x, launchVector.y);
+            } else {
+                angryBird.resetPosition();
             }
         }
     }
 
+
     @Override
     public void resize(int width, int height) {
         viewport.update(width, height);
+        camera.position.set(camera.viewportWidth / 2, camera.viewportHeight / 2, 0);
     }
 
     @Override
-    public void show() {
-        Gdx.input.setInputProcessor(stage); // Set input processor to the stage
-    }
+    public void show() {}
 
     @Override
-    public void hide() {
-        dispose();
-    }
+    public void hide() {}
 
     @Override
     public void pause() {}
@@ -258,9 +279,12 @@ public class Level1Screen implements Screen {
 
     @Override
     public void dispose() {
+        world.dispose();
         batch.dispose();
         background.dispose();
-        world.dispose();
-        stage.dispose(); // Dispose the stage
+        slingshot.dispose();
+        angryBird.dispose();
+        for (Pig pig : pigs) pig.dispose();
+        for (Box box : boxes) box.dispose();
     }
 }
